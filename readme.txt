@@ -34,3 +34,9 @@ Email any questions to DrewGourley at gmail dot com
 
 = 1.0 =
 * First Version
+
+= 2.0 =
+* Complete code overhaul using WordPress query functions instead of custom SQL
+* Pagination of posts in ordering interface
+* Updated for WordPress 3.2 Admin Design
+* Various small bugfixes and optimizations
