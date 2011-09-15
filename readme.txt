@@ -12,7 +12,7 @@ Allows for the ordering of pages through a simple drag-and-drop interface
 Order Up!
 
 A series of plugins for WordPress which allow for the ordering of pages, posts, and taxonomies through a simple 
-drag-and-drop interface using the available WordPress scripts and styles. The plugins are extremely lightweight Ñ 
+drag-and-drop interface using the available WordPress scripts and styles. The plugins are extremely lightweight,
 without a bunch of unnecessary scripts to load into the admin. They also fall in line gracefully with the look 
 and feel of the WordPress interface.
 
