@@ -6,7 +6,7 @@
 Plugin Name: Custom Page Order
 Plugin URI: http://drewgourley.com/order-up-custom-ordering-for-wordpress/
 Description: Allows for the ordering of posts and custom post types through a simple drag-and-drop interface.
-Version: 2.1
+Version: 2.2
 Author: Drew Gourley
 Author URI: http://drewgourley.com/
 License: GPLv2 or later
@@ -61,12 +61,12 @@ function custompageorder_menu() {
 	add_pages_page(__('Order Pages', 'custompageorder'), __('Order Pages', 'custompageorder'), 'edit_pages', 'custompageorder', 'custompageorder');
 }
 function custompageorder_css() {
-	if ( $_GET['page'] == "custompageorder" ) {
+	if ( isset($_GET['page']) && $_GET['page'] == "custompageorder" ) {
 		wp_enqueue_style('custompageorder', plugins_url('css/custompageorder.css', __FILE__), 'screen');
 	}
 }
 function custompageorder_js_libs() {
-	if ( $_GET['page'] == "custompageorder" ) {
+	if ( isset($_GET['page']) && $_GET['page'] == "custompageorder" ) {
 		wp_enqueue_script('jquery');
 		wp_enqueue_script('jquery-ui-core');
 		wp_enqueue_script('jquery-ui-sortable');
@@ -80,7 +80,11 @@ function custompageorder() {
 	global $custompageorder_settings;
 	custompageorder_update_settings();
 	$options = $custompageorder_settings;
-	$page = max( 1, $_GET['paged'] );
+	if ( isset( $_GET['paged'] ) ) {
+		$page = max( 1, $_GET['paged'] );
+	} else { 
+		$page = 1;
+	}
 	$settings = '<input name="custompageorder_settings[page]" type="checkbox" value="1" ' . checked('1', $options['page'], false) . ' /> <label for="custompageorder_settings[page]">Check this box if you want to enable Automatic Sorting of all queries from this post type.</label>';
 	$parent_ID = 0;
 	if (isset($_POST['go-sub-pages'])) { 
@@ -116,7 +120,7 @@ function custompageorder() {
 				$args['paged'] = $prev_page;
 				$prev_query = new WP_Query( $args );
 			}
-			if ( $page !== $query->query_vars['max_num_pages'] ) {
+			if ( $page !== $query->max_num_pages ) {
 				$next_page = $page+1;
 				$args['paged'] = $next_page;
 				$next_query = new WP_Query( $args );
@@ -143,7 +147,7 @@ function custompageorder() {
 					'base' => str_replace( $big, '%#%', get_pagenum_link( $big ) ),
 					'format' => '?paged=%#%',
 					'prev_next' => false,
-					'current' => max( 1, $_GET['paged'] ),
+					'current' => $page,
 					'total' => $query->max_num_pages
 					); 
 				$pagination = paginate_links($args); 
@@ -158,11 +162,11 @@ function custompageorder() {
 				<?php } ?>
 				<div class="misc-pub-section misc-pub-section-last">
 					<?php if ($parent_ID != 0) { ?>
-						<input type="submit" class="button" style="float:left" id="return-sub-pages" name="return-sub-pages" value="<?php _e('Return to Parent Page', 'custompageorder'); ?>" />
+						<input type="submit" class="button" style="float:left" id="return-sub-pages" name="return-sub-pages" value="<?php _e('Return to Parent', 'custompageorder'); ?>" />
 					<?php } ?>
 					<div id="publishing-action">
 						<img src="<?php echo esc_url( admin_url( 'images/wpspin_light.gif' ) ); ?>" id="custom-loading" style="display:none" alt="" />
-						<input type="submit" name="order-submit" id="order-submit" class="button-primary" value="<?php _e('Update Page Order', 'custompageorder') ?>" />
+						<input type="submit" name="order-submit" id="order-submit" class="button-primary" value="<?php _e('Update Order', 'custompageorder') ?>" />
 					</div>
 					<div class="clear"></div>
 					</div>
@@ -228,7 +232,6 @@ function custompageorder() {
 </script>
 <?php }
 }
-
 function custompageorder_update_order( $page = 1 ) {
 	global $custompageorder_settings;
 	$options = $custompageorder_settings;
@@ -256,14 +259,16 @@ function custompageorder_update_order( $page = 1 ) {
 }
 function custompageorder_sub_query( $query ) {
 	$options = '';
-	while ( $query->have_posts() ) : $query->the_post(); $page_ID = get_the_ID(); $args = array( 'post_parent' => $page_ID, 'post_type' => 'page' ); $subpages = new WP_Query( $args );
+	while ( $query->have_posts() ) : $query->the_post(); 
+		$page_ID = get_the_ID();
+		$args = array( 'post_parent' => $page_ID, 'post_type' => 'page' );
+		$subpages = new WP_Query( $args );
 		if ( $subpages->have_posts() ) { 
-			while ( $subpages->have_posts() ) : $subpages->the_post(); $options .= '<option value="' . $page_ID . '">' . get_the_title($page_ID) . '</option>'; endwhile; 
+			$options .= '<option value="' . $page_ID . '">' . get_the_title($page_ID) . '</option>'; 
 		} 
 	endwhile;
 	return $options;
 }
-
 function custompageorder_order_posts($orderby) {
 	global $wpdb;
 	$orderby = "$wpdb->posts.menu_order ASC";
@@ -272,7 +277,9 @@ function custompageorder_order_posts($orderby) {
 function custompageorder_sort( $query ) {
 	global $custompageorder_settings;
 	$options = $custompageorder_settings;
-	$post_type = $query->query_vars['post_type'];
+	if ( isset( $query->query_vars['post_type'] ) && $query->query_vars['post_type'] == 'page' ) {
+		$post_type = $query->query_vars['post_type'];
+	}
 	if ( $options[$post_type] == 1 && !isset($_GET['orderby']) ) {
 		add_filter('posts_orderby', 'custompageorder_order_posts');
 	}
